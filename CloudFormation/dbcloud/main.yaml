@@ -1,0 +1,122 @@
+---
+  Resources:
+    # Create a VPC
+    VPCAula:
+      Type: AWS::EC2::VPC
+      Properties:
+        CidrBlock:  10.0.0.0/16
+        EnableDnsSupport: 'true'
+        EnableDnsHostnames: 'true'
+  
+    # Create Subnet
+    PublicSubnetA:
+      Type: AWS::EC2::Subnet
+      Properties:
+        VpcId:  !Ref VPCAula
+        CidrBlock:  10.0.1.0/24
+
+    PublicSubnetB:
+      Type: AWS::EC2::Subnet
+      Properties:
+        VpcId:  !Ref VPCAula
+        CidrBlock:  10.0.2.0/24
+    
+    PrivateSubnetA:
+      Type: AWS::EC2::Subnet
+      Properties:
+        VpcId:  !Ref VPCAula
+        CidrBlock:  10.0.3.0/24
+    
+    PrivateSubnetB:
+      Type: AWS::EC2::Subnet
+      Properties:
+        VpcId:  !Ref VPCAula
+        CidrBlock:  10.0.4.0/24
+    
+    # Create Internet Gateway
+    IGW:
+      Type: AWS::EC2::InternetGateway
+    
+    # Attach in VPC
+    AttachIGW:
+      Type: AWS::EC2::VPCGatewayAttachment
+      Properties:
+        VpcId:  !Ref VPCAula
+        InternetGatewayId:  !Ref IGW
+
+    RT:
+      Type: AWS::EC2::RouteTable
+      Properties:
+        VpcId:  !Ref  VPCAula
+
+    RTtoIGW:
+      Type: AWS::EC2::Route
+      DependsOn:  IGW
+      Properties:
+        DestinationCidrBlock: 0.0.0.0/0
+        GatewayId:  !Ref IGW
+        RouteTableId: !Ref RT
+
+    RTAssoc:
+      Type: AWS::EC2::SubnetRouteTableAssociation
+      Properties:
+        RouteTableId: !Ref RT
+        SubnetId: !Ref PublicSubnetA
+
+    # Create EC2
+    Instance:
+      Type: AWS::EC2::Instance
+      Properties:
+        ImageId:  ami-033b95fb8079dc481
+        InstanceType: t2.micro
+        SubnetId: !Ref PrivateSubnetA
+    
+    # Create SNS
+    Topico:
+      Type: AWS::SNS::Topic
+      Properties:
+        Subscription:
+        - Endpoint: "marcelosantostecnologia@gmail.com"
+          Protocol: email
+        TopicName:  "Topico"
+    
+    # Create Bucket
+    Bucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        AccessControl:  Private
+        BucketName: dbcloud-bucket
+        LifecycleConfiguration:
+          Rules:
+            - Id: Gracier
+              Prefix: relatorio
+              Status: Enabled
+              ExpirationInDays: 365
+              Transitions:
+                - TransitionInDays: 1
+                  StorageClass: GLACIER
+
+    # Create a Security Group
+    SGAula:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupDescription: Libera porta 22
+        SecurityGroupIngress:
+          - IpProtocol: tcp
+            FromPort: '22'
+            ToPort: '22'
+            CidrIp: 0.0.0.0/0
+        VpcId:  !Ref VPCAula
+
+  # Create Outputs
+  Outputs:
+    Bucket:
+      Value:  !Ref Bucket
+    StackName:
+      Value:  !Ref  AWS::StackName
+    StackId:
+      Value:  !Ref AWS::StackId
+    Region:
+      Value:  !Ref AWS::Region
+    Account:
+      Value: !Ref AWS::AccountId
