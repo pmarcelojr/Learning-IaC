@@ -1,0 +1,95 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: template Hands-On Two
+## Subscription SQS in topic SNS
+
+Parameters:
+  NameSns:
+    Type: String
+    Description: Topic Name
+    Default: Insurance-Quote-Request
+    
+  NameSqsOne:
+    Type: String
+    Description: Access Car and Boats
+    Default: "Vehicle-Insurance-Quotes"
+
+  NameSqsTwo:
+    Type: String
+    Description: Access Life
+    Default:  Life-Insurance-Quotes
+  
+  NameSqsThree:
+    Type: String 
+    Description: All Access
+    Default: All-Quotes
+
+Resources: 
+  # SNS
+  MySnsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Ref NameSns
+      TopicName: !Ref NameSns
+
+  SQSOne:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref NameSqsOne
+
+  SQSTwo:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref NameSqsTwo
+
+  SQSThree:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref NameSqsThree
+
+  SNSSubscriptionOne:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref MySnsTopic
+      Protocol: sqs
+      Endpoint: !GetAtt 
+        - SQSOne
+        - Arn
+      FilterPolicy: '{
+        "insurance_type": ["car", "boat"]
+      }'
+  
+  SNSSubscriptionTwo:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref MySnsTopic
+      Protocol: sqs
+      Endpoint: !GetAtt 
+        - SQSTwo
+        - Arn
+      FilterPolicy: '{
+        "insurance_type": ["life"]
+      }'
+  
+  SNSSubscriptionThree:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref MySnsTopic
+      Protocol: sqs
+      Endpoint: !GetAtt 
+        - SQSThree
+        - Arn
+
+Outputs:
+  MyTopicArn:
+    Description: Arn of Created SNS Topic
+    Value: !Ref MySnsTopic
+  MyQueueOne:
+    Description: Arn of for SQSOne
+    Value:  !Ref SQSOne
+  MyQueueTwo:
+    Description: Arn of for SQSTwo
+    Value: !Ref SQSTwo
+  MyQueueThree:
+    Description: Arn of for SQSThree
+    Value: !Ref SQSThree
